@@ -14,19 +14,24 @@ import random
 import logging
 from instabot import Bot
 
-# ⚡ تحسينات الأمان والأداء
+# ⚡ تقليل التسجيل المفرط
+logging.getLogger("instabot").setLevel(logging.ERROR)
+
+# 🟢 متغيرات البيئة في Render:
+ACCOUNTS = os.getenv("ACCOUNTS")
+MAIN_ACCOUNT = os.getenv("MAIN_ACCOUNT")
+
+if not ACCOUNTS or not MAIN_ACCOUNT:
+    raise SystemExit("⚠️ يجب ضبط متغيرات البيئة ACCOUNTS و MAIN_ACCOUNT")
+
 class AdvancedInstagramBot:
     def __init__(self):
-        # إعدادات مضادة للحظر
         self.delay_ranges = {
             'login': [5, 10],
             'search': [3, 7], 
             'follow': [8, 15],
-            'between_accounts': [120, 300]  # 2-5 دقائق
+            'between_accounts': [300, 600]  # 5-10 دقائق
         }
-        
-        # تقليل التسجيل المفرط
-        logging.getLogger("instabot").setLevel(logging.ERROR)
     
     def safe_login(self, bot, username, password, max_retries=2):
         """تسجيل دخول آمن مع إعادة محاولة"""
@@ -34,7 +39,6 @@ class AdvancedInstagramBot:
             try:
                 print(f"🔐 محاولة تسجيل الدخول ({attempt + 1}/{max_retries}) لـ {username}")
                 
-                # إعدادات البوت المضادة للحظر
                 bot.api.delay_range = self.delay_ranges['login']
                 bot.api.timeout = 30
                 
@@ -47,14 +51,14 @@ class AdvancedInstagramBot:
                     print(f"❌ فشل تسجيل الدخول: {username}")
                     
                     if attempt < max_retries - 1:
-                        wait_time = random.uniform(30, 60)
+                        wait_time = random.uniform(60, 120)
                         print(f"⏳ انتظار {wait_time:.0f} ثانية قبل إعادة المحاولة...")
                         time.sleep(wait_time)
                         
             except Exception as e:
                 print(f"🚨 خطأ في تسجيل الدخول: {e}")
                 if attempt < max_retries - 1:
-                    time.sleep(random.uniform(30, 60))
+                    time.sleep(random.uniform(60, 120))
         
         return False
     
@@ -63,14 +67,12 @@ class AdvancedInstagramBot:
         try:
             print(f"🎯 البحث عن المستخدم: {target_username}")
             
-            # انتظار عشوائي قبل البحث
             time.sleep(random.uniform(*self.delay_ranges['search']))
             
             target_id = bot.get_user_id_from_username(target_username)
             if not target_id:
                 return False, f"لم يتم العثور على المستخدم {target_username}"
             
-            # التحقق من المتابعة الحالية
             print("🔍 التحقق من حالة المتابعة...")
             try:
                 following = bot.get_user_following(bot.user_id)
@@ -79,10 +81,8 @@ class AdvancedInstagramBot:
             except Exception as e:
                 print(f"⚠️ خطأ في التحقق من المتابعة: {e}")
             
-            # انتظار عشوائي قبل المتابعة
             time.sleep(random.uniform(*self.delay_ranges['follow']))
             
-            # تنفيذ المتابعة
             print(f"🔄 محاولة متابعة {target_username}...")
             result = bot.follow(target_id)
             
@@ -94,18 +94,11 @@ class AdvancedInstagramBot:
         except Exception as e:
             error_msg = str(e)
             if "challenge_required" in error_msg:
-                return False, "يحتاج تحقق أمني - سجل دخول يدوي من الهاتف"
+                return False, "يحتاج تحقق أمني"
             elif "rate_limit" in error_msg:
-                return False, "تم حظر الطلبات مؤقتاً - جرب لاحقاً"
+                return False, "تم حظر الطلبات مؤقتاً"
             else:
                 return False, f"خطأ غير متوقع: {error_msg}"
-
-# 🟢 متغيرات البيئة في Render:
-ACCOUNTS = os.getenv("ACCOUNTS")  # دعم متعدد الحسابات
-MAIN_ACCOUNT = os.getenv("MAIN_ACCOUNT")
-
-if not ACCOUNTS or not MAIN_ACCOUNT:
-    raise SystemExit("⚠️ يجب ضبط متغيرات البيئة ACCOUNTS و MAIN_ACCOUNT (مثال: user1:pass1,user2:pass2)")
 
 def parse_accounts(accounts_str):
     """تحويل سلسلة الحسابات إلى قائمة"""
@@ -142,12 +135,12 @@ def follow_main_with_account(user, pwd):
         # انتظار نهائي قبل تسجيل الخروج
         time.sleep(random.uniform(10, 20))
         
-        # تسجيل الخروج الآمن
+        # تسجيل الخروج الآمن (مع معالجة الخطأ)
         try:
             bot.logout()
             print(f"🚪 تم تسجيل الخروج: {user}")
         except Exception as e:
-            print(f"⚠️ خطأ في تسجيل الخروج: {e}")
+            print(f"⚠️ خطأ في تسجيل الخروج (غير مهم): {e}")
         
         return follow_success, message
         
@@ -191,7 +184,7 @@ def run_all_accounts():
         
         # انتظار ذكي بين الحسابات
         if i < total_accounts:
-            wait_time = random.uniform(*advanced_bot.delay_ranges['between_accounts'])
+            wait_time = random.uniform(*AdvancedInstagramBot().delay_ranges['between_accounts'])
             minutes = wait_time / 60
             print(f"⏳ انتظار {minutes:.1f} دقائق للحساب التالي...")
             time.sleep(wait_time)
@@ -207,5 +200,15 @@ def run_all_accounts():
 if __name__ == "__main__":
     print("🚀 بدء تشغيل بوت Instagram المتقدم")
     print("⚡ إصدار محسّن - مضاد للحظر - إدارة أخطاء متقدمة")
+    
+    # ⏰ تأخير وقائي قبل البدء
+    initial_delay = random.uniform(60, 180)
+    print(f"⏳ تأخير وقائي: انتظار {initial_delay/60:.1f} دقائق قبل البدء...")
+    time.sleep(initial_delay)
+    
     run_all_accounts()
-    print("🏁 انتهى التنفيذ")
+    print("🏁 انتهى التنفيذ - الخدمة ستتوقف تلقائياً")
+    
+    # 🛑 منع إعادة التشغيل التلقائي
+    print("💤 إيقاف الخدمة لمنع إعادة التشغيل والحظر...")
+    sys.exit(0)  # إيقاف البرنامج نهائياً بعد الانتهاء
