@@ -237,7 +237,7 @@ def run_bot():
         print("⚡ إصدار محسّن - مضاد للحظر - إدارة أخطاء متقدمة")
         
         # ⏰ تأخير وقائي قبل البدء
-        initial_delay = random.uniform(60, 180)
+        initial_delay = random.uniform(0, 18)
         print(f"⏳ تأخير وقائي: انتظار {initial_delay/60:.1f} دقائق قبل البدء...")
         time.sleep(initial_delay)
         
