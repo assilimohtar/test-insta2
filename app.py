@@ -12,17 +12,27 @@ import shutil
 import time
 import random
 import logging
+from flask import Flask, jsonify
 from instabot import Bot
 
 # ⚡ تقليل التسجيل المفرط
 logging.getLogger("instabot").setLevel(logging.ERROR)
 
+# 🟢 إنشاء تطبيق Flask
+app = Flask(__name__)
+
 # 🟢 متغيرات البيئة في Render:
 ACCOUNTS = os.getenv("ACCOUNTS")
 MAIN_ACCOUNT = os.getenv("MAIN_ACCOUNT")
 
-if not ACCOUNTS or not MAIN_ACCOUNT:
-    raise SystemExit("⚠️ يجب ضبط متغيرات البيئة ACCOUNTS و MAIN_ACCOUNT")
+# 🔄 نظام النبض المستمر
+def health_pulse():
+    """إرسال نبضات حياة كل 30 ثانية"""
+    counter = 0
+    while True:
+        counter += 1
+        print(f"❤️ النبضة {counter}: الخدمة تعمل - {time.ctime()}")
+        time.sleep(30)
 
 class AdvancedInstagramBot:
     def __init__(self):
@@ -157,6 +167,10 @@ def follow_main_with_account(user, pwd):
 
 def run_all_accounts():
     """تشغيل جميع الحسابات مع إدارة ذكية"""
+    if not ACCOUNTS or not MAIN_ACCOUNT:
+        print("⚠️ يجب ضبط متغيرات البيئة ACCOUNTS و MAIN_ACCOUNT")
+        return
+    
     accounts = parse_accounts(ACCOUNTS)
     
     if not accounts:
@@ -184,7 +198,7 @@ def run_all_accounts():
         
         # انتظار ذكي بين الحسابات
         if i < total_accounts:
-            wait_time = random.uniform(*AdvancedInstagramBot().delay_ranges['between_accounts'])
+            wait_time = random.uniform(300, 600)  # 5-10 دقائق
             minutes = wait_time / 60
             print(f"⏳ انتظار {minutes:.1f} دقائق للحساب التالي...")
             time.sleep(wait_time)
@@ -197,18 +211,69 @@ def run_all_accounts():
     print(f"📈 نسبة النجاح: {(success_count/total_accounts)*100:.1f}%")
     print(f"{'='*50}")
 
+# 🟢 روابط Flask
+@app.route('/')
+def home():
+    return jsonify({
+        "status": "running",
+        "service": "Instagram Bot",
+        "endpoints": {
+            "/": "الصفحة الرئيسية",
+            "/run-bot": "تشغيل البوت",
+            "/status": "حالة الخدمة",
+            "/health": "فحص الصحة"
+        },
+        "config": {
+            "main_account": MAIN_ACCOUNT,
+            "accounts_count": len(parse_accounts(ACCOUNTS)) if ACCOUNTS else 0
+        }
+    })
+
+@app.route('/run-bot')
+def run_bot():
+    """تشغيل البوت في الخلفية"""
+    def run_in_background():
+        print("🚀 بدء تشغيل بوت Instagram المتقدم")
+        print("⚡ إصدار محسّن - مضاد للحظر - إدارة أخطاء متقدمة")
+        
+        # ⏰ تأخير وقائي قبل البدء
+        initial_delay = random.uniform(60, 180)
+        print(f"⏳ تأخير وقائي: انتظار {initial_delay/60:.1f} دقائق قبل البدء...")
+        time.sleep(initial_delay)
+        
+        run_all_accounts()
+        print("🏁 انتهى التنفيذ")
+    
+    # تشغيل البوت في thread منفصل
+    import threading
+    thread = threading.Thread(target=run_in_background, daemon=True)
+    thread.start()
+    
+    return jsonify({
+        "status": "started",
+        "message": "البوت يعمل في الخلفية",
+        "timestamp": time.time()
+    })
+
+@app.route('/status')
+def status():
+    return jsonify({
+        "status": "active",
+        "uptime": time.time(),
+        "service": "Instagram Bot"
+    })
+
+@app.route('/health')
+def health():
+    return jsonify({"status": "healthy", "timestamp": time.time()})
+
 if __name__ == "__main__":
-    print("🚀 بدء تشغيل بوت Instagram المتقدم")
-    print("⚡ إصدار محسّن - مضاد للحظر - إدارة أخطاء متقدمة")
+    # بدء نظام النبض
+    pulse_thread = threading.Thread(target=health_pulse, daemon=True)
+    pulse_thread.start()
     
-    # ⏰ تأخير وقائي قبل البدء
-    initial_delay = random.uniform(60, 180)
-    print(f"⏳ تأخير وقائي: انتظار {initial_delay/60:.1f} دقائق قبل البدء...")
-    time.sleep(initial_delay)
+    print("🎯 بدء الخدمة مع نظام النبض المستمر...")
     
-    run_all_accounts()
-    print("🏁 انتهى التنفيذ - الخدمة ستتوقف تلقائياً")
-    
-    # 🛑 منع إعادة التشغيل التلقائي
-    print("💤 إيقاف الخدمة لمنع إعادة التشغيل والحظر...")
-    sys.exit(0)  # إيقاف البرنامج نهائياً بعد الانتهاء
+    # تشغيل Flask على المنفذ المطلوب
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port, debug=False)
