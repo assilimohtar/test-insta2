@@ -24,7 +24,7 @@ MAIN_ACCOUNT = os.getenv("MAIN_ACCOUNT")
 if not ACCOUNTS or not MAIN_ACCOUNT:
     raise SystemExit("⚠️ يجب ضبط متغيرات البيئة SINGLE_ACCOUNT و MAIN_ACCOUNT (مثال: user:pass)")
 
-username, password = SINGLE_ACCOUNT.split(":", 1)
+username, password = ACCOUNTS.split(":", 1)
 username = username.strip()
 password = password.strip()
 
