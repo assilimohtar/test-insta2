@@ -40,7 +40,7 @@ class AdvancedInstagramBot:
             'login': [5, 10],
             'search': [3, 7], 
             'follow': [8, 15],
-            'between_accounts': [300, 600]  # 5-10 دقائق
+            'between_accounts': [120, 300]  # 5-10 دقائق
         }
     
     def safe_login(self, bot, username, password, max_retries=2):
