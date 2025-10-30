@@ -59,5 +59,3 @@ def follow_main_with_account(user, pwd):
 
 if __name__ == "__main__":
     follow_main_with_account(username, password)
-
-لديا هذا الكود في ملف على gihub اريد معرفة ال requirements.txt الخاص به كي استخدمه مع رندر
